@@ -90,14 +90,6 @@ Esto valida la eficiencia del módulo de hardware en Verilog: la latencia mínim
 * **Tools**: Python 3.x (Generación), C++17 (Auditoría).
 
 ---
+**Autor**: Nicolas Henault - Estudiante de Ingeniería Electrónica .
 
-## 📂 Estructura del Proyecto
-* `/rtl/hft_placa.v`: Implementación del procesador de trading.
-* `/tb/hft_tb.v`: Testbench para la carga de datos y generación de `ordenes.txt`.
-* `/scripts/Random_Walk.py`: Generador de datos de mercado hexadecimales.
-* `/tools/Trading.cpp`: Auditor financiero de resultados.
-
----
-**Autor**: Nico - Estudiante de Ingeniería Electrónica (3er año).
-Especializado en Sistemas Digitales, Procesamiento de Señales y Tecnología Financiera (FinTech).
 
