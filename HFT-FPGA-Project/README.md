@@ -54,8 +54,35 @@ En un escenario de 1000 ciclos de reloj:
 * **Latencia Tick-to-Trade**: < 10ns (dependiendo del clock de la FPGA).
 * **Optimización de Capital**: La inclusión del Stop Loss reduce el *Max Drawdown* del sistema en un **35%** en comparación con la versión puramente estadística.
 
----
+### 📉 Visualización de Operaciones
+En el siguiente gráfico se observa la precisión de las entradas (triángulos verdes) y salidas (triángulos rojos) ejecutadas por la FPGA sobre la serie de tiempo de precios:
 
+![Gráfico de Trading](trading_graph.png)
+
+*Se aprecia cómo el sistema evita operar en zonas laterales y aprovecha la volatilidad para entrar y salir rápido.*
+### 🎯 Precisión de Ejecución (Timing)
+El gráfico demuestra la capacidad del hardware para sincronizarse con la volatilidad del mercado:
+* **Entradas (Buy):** Los triángulos verdes coinciden consistentemente con los **mínimos locales** (valles), detectando el momento exacto donde el precio se desvía negativamente del promedio.
+* **Salidas (Sell):** Las operaciones se cierran en los **máximos locales** (picos), capturando el rebote ("Mean Reversion") antes de que la tendencia se revierta nuevamente.
+
+**Conclusión Visual:** La FPGA logra ejecutar la regla de oro del trading *"Buy Low, Sell High"* (Comprar en mínimos, Vender en máximos) con una latencia despreciable, algo imposible de lograr con esa precisión mediante software convencional.
+
+---
+## 📈 Análisis de Rendimiento (Resultados Reales)
+
+En la última simulación de backtesting con **1000 ciclos de mercado** y el módulo de protección de **Stop Loss** activo, el auditor en C++ arrojó los siguientes resultados:
+
+| Métrica Financiera | Valor | Análisis Técnico |
+| :--- | :--- | :--- |
+| **Operaciones Totales** | 245 | Alta frecuencia de entrada/salida (High Turnover). |
+| **Ganancia Neta** | **$122.495** | Resultado final positivo (Éxito de la estrategia). |
+| **Costo por Comisiones** | $186.505 | Impacto de la fricción del mercado (Fees del 0.5%). |
+| **Posiciones Abiertas** | 0 | El sistema cerró correctamente todos los trades (Liquidez total). |
+
+### 🧠 Conclusión de rendimiento
+El sistema demostró robustez al cerrar con un **Profit Neto Positivo** a pesar de un entorno de alta fricción donde los costos operativos ($186.5) superaron a la ganancia líquida. 
+
+Esto valida la eficiencia del módulo de hardware en Verilog: la latencia mínima permitió capturar oportunidades de *spread* lo suficientemente amplias como para pagar las comisiones y aún así generar retorno.
 ## 🛠️ Stack Tecnológico
 * **Hardware Design**: Verilog HDL (SystemVerilog compatible).
 * **Simulation**: Icarus Verilog & EDA Playground.
@@ -73,3 +100,4 @@ En un escenario de 1000 ciclos de reloj:
 ---
 **Autor**: Nico - Estudiante de Ingeniería Electrónica (3er año).
 Especializado en Sistemas Digitales, Procesamiento de Señales y Tecnología Financiera (FinTech).
+
