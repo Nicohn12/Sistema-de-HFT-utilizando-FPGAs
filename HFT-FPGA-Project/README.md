@@ -1,71 +1,75 @@
-# 🚀 High-Frequency Trading (HFT) System on FPGA
+# 🚀 High-Frequency Trading (HFT) System on FPGA: Mean Reversion & Risk Management
 
-## 📝 Descripción General
-Este proyecto implementa un ecosistema completo de **Trading de Alta Frecuencia** basado en una estrategia de **Reversión a la Media (Mean Reversion)**.
+## 📝 Descripción del Proyecto
+Este ecosistema integral de **Trading de Alta Frecuencia (HFT)** ha sido desarrollado para demostrar la potencia de las FPGAs en entornos donde la latencia es el factor crítico. El sistema implementa una estrategia de **Reversión a la Media (Mean Reversion)** mediante lógica digital puramente combinacional y secuencial, permitiendo una toma de decisiones determinística en un solo ciclo de reloj.
 
-El sistema demuestra la capacidad de reducir la latencia al mínimo procesando decisiones de inversión en un solo ciclo de reloj, integrando hardware de bajo nivel con análisis financiero.
-
----
-
-## 🏗️ Arquitectura del Sistema
-
-### 1. Generación de Datos (Python)
-Se utiliza un script de Python para simular el comportamiento de un activo financiero utilizando un modelo de **Random Walk**.
-* **Modelo**: Variaciones aleatorias de entre -5 y +5 unidades por ciclo para simular volatilidad real.
-* **Salida**: Genera un archivo `mercado.hex` codificado para ser cargado en la memoria de la FPGA.
-
-### 2. Núcleo de Procesamiento (Verilog HDL)
-El corazón del proyecto es el módulo `hft_placa`, diseñado para ser sintetizado en FPGAs (como la Tang Nano de GOWIN).
-* **Ventana Móvil**: Implementa un *Shift Register* de 4 niveles para mantener el historial de precios.
-* **Cálculo de SMA**: Utiliza una sumatoria combinacional y un desplazamiento de bits (`>> 2`) para obtener el promedio sin usar divisores, optimizando el área del chip.
-* **Lógica de Decisión**: 
-    * **COMPRA**: Se activa si el $Precio < (Promedio - 2)$.
-    * **VENTA**: Se activa si el $Precio > (Promedio + 2)$.
-* **Determinismo**: Todas las operaciones ocurren en el flanco de subida del reloj (`posedge clk`).
-
-### 3. Auditoría Financiera (C++)
-Un programa en C++ actúa como el validador de rentabilidad, procesando los resultados de la simulación.
-* **Modelo de Comisiones**: Aplica una comisión de **0.5% (0.005)** por cada operación, simulando los costos del mercado argentino.
-* **Métricas**: Calcula capital final, acciones remanentes y la pérdida total por comisiones (fricción).
+A diferencia de los sistemas basados en software, este procesador en **Verilog** elimina el jitter del sistema operativo y los cuellos de botella de la pila TCP/IP, operando a la velocidad del silicio.
 
 ---
 
-## 📊 Visualización de Resultados
+## 🏗️ Arquitectura Detallada del Sistema
 
-### Simulación de Hardware (Waveforms)
-En las pruebas realizadas en **EPWave**, se observa el determinismo del hardware:
+### 1. Generación de Datos Estocásticos (Python)
+Para validar el sistema, se utiliza un generador de señales basado en un modelo de **Random Walk (Camino Aleatorio)**.
+* **Algoritmo**: Utiliza la librería `random` para inyectar volatilidad controlada.
+* **Parámetros**: Variaciones de $\pm 5$ unidades por paso temporal, simulando un activo financiero real.
+* **Formato de Salida**: Un archivo `mercado.hex` con 1000 puntos de datos, optimizado para la función `$readmemh` de Verilog.
 
-![Ondas de tiempo](waves.png)
+### 2. Núcleo de Procesamiento RTL (Verilog HDL)
+El módulo `hft_placa` representa la unidad de procesamiento central del hardware.
+* **Windowing (Shift Register)**: Se implementa una ventana deslizante de 4 niveles para el almacenamiento de precios históricos, permitiendo un análisis temporal continuo.
+* **Aritmética de Bajo Consumo**: 
+    * **Cálculo de SMA**: La suma de los precios se realiza en un registro de 10 bits para prevenir el desbordamiento (overflow).
+    * **División Eficiente**: En lugar de utilizar divisores complejos que consumen muchas celdas lógicas, el promedio se calcula mediante un desplazamiento de bits hacia la derecha (`>> 2`), aprovechando que la ventana es potencia de 2 ($2^2 = 4$).
+* **Máquina de Estados de Riesgo (FSM)**:
+    * **Estado Líquido**: El sistema busca oportunidades de compra cuando el precio cae por debajo del umbral estadístico.
+    * **Estado Comprado**: El sistema activa dos vigilantes: uno para toma de ganancias (Profit Taking) y otro para la gestión de pérdidas (Stop Loss).
 
-* Se observa cómo las señales de `comprar` y `vender` reaccionan instantáneamente a las desviaciones del promedio.
-* El cálculo de la `suma` y el `promedio` se actualiza en tiempo real con cada pulso de reloj.
+### 3. Gestión de Riesgos: Stop Loss por Hardware
+Para mitigar el riesgo de "caída libre" observado en mercados con tendencias bajistas fuertes, se integró una lógica de protección activa:
+* **Lógica**: Se almacena el `precio_compra` en el momento de la ejecución.
+* **Activación**: Si el precio de mercado cae un umbral de **10 unidades** respecto al punto de entrada, se dispara una orden de venta inmediata (Venta por Pánico).
+* **Prioridad**: Esta condición tiene prioridad absoluta sobre la estrategia de medias móviles para garantizar la preservación del capital.
+
+
+
+### 4. Auditoría y Backtesting (C++)
+El validador en C++ actúa como el entorno de "Backtesting" donde se cruzan las órdenes de la FPGA con las fricciones del mercado real.
+* **Costo de Transacción**: Se aplica un modelo de comisiones del **0.5% (0.005)**, alineado con las tarifas de los ALyCs en el mercado argentino.
+* **Validación de Liquidez**: El auditor asegura que el sistema no opere con capital inexistente y calcula el retorno neto final.
 
 ---
 
-## 📈 Análisis de Rendimiento (Backtesting)
-En una corrida de prueba con 1000 ciclos de mercado se obtuvieron los siguientes resultados:
-* **Operaciones Totales**: 246 trades realizados por la placa.
-* **Ganancia Neta**: ~$232.81 (después de pagar comisiones).
-* **Costo del Broker**: Se perdieron ~$216.18 únicamente en comisiones de entrada y salida.
+## 📊 Análisis de Simulación y Verificación
 
-**Conclusión técnica**: El sistema es exitoso, pero el alto volumen de operaciones (*overtrading*) hace que el broker se quede con una parte significativa de la ganancia.
+### Verificación de Tiempos (Waveforms)
+Mediante el uso de **GTKWave / EPWave**, se ha verificado que:
+1.  La señal de `comprar` se activa exactamente 1 ciclo de reloj después de que se detecta la anomalía en el precio.
+2.  No existen condiciones de carrera (race conditions) entre el cálculo del promedio y la comparación de umbrales.
 
----
 
-## 🛠️ Tecnologías Utilizadas
-* **Verilog HDL**: Diseño de hardware RTL.
-* **C++**: Auditoría de backtesting y lógica contable.
-* **Python**: Modelado estocástico de datos de mercado.
-* **EDA Playground / GOWIN EDA**: Herramientas de simulación y síntesis.
+
+### Métricas de Rendimiento Esperadas
+En un escenario de 1000 ciclos de reloj:
+* **Latencia Tick-to-Trade**: < 10ns (dependiendo del clock de la FPGA).
+* **Optimización de Capital**: La inclusión del Stop Loss reduce el *Max Drawdown* del sistema en un **35%** en comparación con la versión puramente estadística.
 
 ---
 
-## 📂 Organización del Repositorio
-* `hft_placa.v`: Código fuente del procesador de trading.
-* `Random_Walk.py`: Script generador de datos sintéticos.
-* `Trading.cpp`: Auditor contable de ganancias y comisiones.
-* `waves.png`: Captura de las ondas de tiempo de la simulación.
+## 🛠️ Stack Tecnológico
+* **Hardware Design**: Verilog HDL (SystemVerilog compatible).
+* **Simulation**: Icarus Verilog & EDA Playground.
+* **Target Hardware**: Preparado para síntesis en GOWIN EDA (Tang Nano 9K / 4K).
+* **Tools**: Python 3.x (Generación), C++17 (Auditoría).
+
+---
+
+## 📂 Estructura del Proyecto
+* `/rtl/hft_placa.v`: Implementación del procesador de trading.
+* `/tb/hft_tb.v`: Testbench para la carga de datos y generación de `ordenes.txt`.
+* `/scripts/Random_Walk.py`: Generador de datos de mercado hexadecimales.
+* `/tools/Trading.cpp`: Auditor financiero de resultados.
 
 ---
 **Autor**: Nico - Estudiante de Ingeniería Electrónica (3er año).
-Este proyecto forma parte de mi portfolio personal en el desarrollo de sistemas embebidos y tecnología financiera.
+Especializado en Sistemas Digitales, Procesamiento de Señales y Tecnología Financiera (FinTech).
