@@ -9,6 +9,8 @@ module hft_placa(
  reg [7:0] historial [0:3];
  reg [9:0] suma; 
  reg [7:0] promedio;  
+ reg [7:0] precio_compra;
+ reg comprado;
 
 initial begin
         historial[0] = 0; historial[1] = 0; historial[2] = 0; historial[3] = 0;
@@ -25,14 +27,22 @@ historial[3] <= precio;
 
  suma = historial[0] + historial[1] + historial[2] + historial[3];
  promedio = suma >> 2; 
-       
+
+if (comprado && (precio < (precio_compra - 8'd10))) begin
+   comprar <= 1'b0;
+   vender  <= 1'b1;
+   comprado <= 1'b0;    
+end
 if(precio > (promedio + 8'd2)) begin
     comprar <= 1'b0;
     vender  <= 1'b1;
+ comprado <= 1'b0;
 end
 else if (precio < (promedio - 8'd2)) begin
      comprar <= 1'b1;
      vender  <= 1'b0;
+     precio_compra <= precio;
+     comprado <= 1'b1;
 end
       
 else begin
@@ -105,4 +115,5 @@ end
 $fclose(archivo_salida);
 $finish; 
 end 
+
 endmodule
